@@ -1,12 +1,38 @@
 import { Box, Text } from "ink";
+import Gradient from "ink-gradient";
+import { useState, useEffect } from "react";
+
+const rainbowColors = [
+  "#ff0000",
+  "#ff7f00",
+  "#ffff00",
+  "#00ff00",
+  "#0000ff",
+  "#4b0082",
+  "#9400d3",
+];
 
 interface HeaderProps {
-  currentView: "markets" | "portfolio" | "search";
+  currentView: "events" | "portfolio" | "search";
 }
 
 export function Header({ currentView }: HeaderProps) {
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOffset((prev) => (prev + 1) % rainbowColors.length);
+    }, 150);
+    return () => clearInterval(interval);
+  }, []);
+
+  const shiftedColors = [
+    ...rainbowColors.slice(offset),
+    ...rainbowColors.slice(0, offset),
+  ];
+
   const tabs = [
-    { key: "markets", label: "Markets", hotkey: "m" },
+    { key: "events", label: "Events", hotkey: "e" },
     { key: "portfolio", label: "Portfolio", hotkey: "p" },
     { key: "search", label: "Search", hotkey: "s" },
   ] as const;
@@ -20,10 +46,7 @@ export function Header({ currentView }: HeaderProps) {
       paddingX={1}
     >
       <Box>
-        <Text bold color="cyan">
-          PMKT
-        </Text>
-        <Text color="gray"> | Polymarket Terminal</Text>
+        <Gradient colors={shiftedColors}>PMKT | Polymarket Terminal</Gradient>
       </Box>
       <Box gap={2}>
         {tabs.map((tab) => (

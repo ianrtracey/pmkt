@@ -1,1 +1,1 @@
-export { useMarkets } from "./useMarkets.js";
+export { useEvents } from "./useEvents.js";

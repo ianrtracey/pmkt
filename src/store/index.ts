@@ -1,29 +1,29 @@
 import { create } from "zustand";
-import type { Market } from "../api/index.js";
+import type { Event } from "../api/index.js";
 
 interface AppState {
-  markets: Market[];
-  selectedMarketId: string | null;
+  events: Event[];
+  selectedEventId: string | null;
   isLoading: boolean;
   error: string | null;
-  view: "markets" | "portfolio" | "search";
+  view: "events" | "portfolio" | "search";
 
-  setMarkets: (markets: Market[]) => void;
-  selectMarket: (id: string | null) => void;
+  setEvents: (events: Event[]) => void;
+  selectEvent: (id: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setView: (view: AppState["view"]) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  markets: [],
-  selectedMarketId: null,
+  events: [],
+  selectedEventId: null,
   isLoading: false,
   error: null,
-  view: "markets",
+  view: "events",
 
-  setMarkets: (markets) => set({ markets }),
-  selectMarket: (id) => set({ selectedMarketId: id }),
+  setEvents: (events) => set({ events }),
+  selectEvent: (id) => set({ selectedEventId: id }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
   setView: (view) => set({ view }),

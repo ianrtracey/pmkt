@@ -1,12 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockMarkets } from '../test/fixtures/markets.js';
+
+// Mock event data
+const mockEvents = [
+  {
+    id: '12345',
+    title: 'Test Event 1',
+    slug: 'test-event-1',
+    active: true,
+    volume: 100000,
+    markets: [],
+  },
+  {
+    id: '67890',
+    title: 'Test Event 2',
+    slug: 'test-event-2',
+    active: true,
+    volume: 50000,
+    markets: [],
+  },
+];
 
 // Hoist mocks to avoid initialization issues
 const mocks = vi.hoisted(() => ({
-  mockSetMarkets: vi.fn(),
+  mockSetEvents: vi.fn(),
   mockSetLoading: vi.fn(),
   mockSetError: vi.fn(),
-  mockGetMarkets: vi.fn(),
+  mockGetEvents: vi.fn(),
 }));
 
 // Mock React hooks to avoid "invalid hook call" errors
@@ -18,10 +37,10 @@ vi.mock('react', () => ({
 // Mock the store
 vi.mock('../store/index.js', () => ({
   useAppStore: () => ({
-    markets: [],
+    events: [],
     isLoading: false,
     error: null,
-    setMarkets: mocks.mockSetMarkets,
+    setEvents: mocks.mockSetEvents,
     setLoading: mocks.mockSetLoading,
     setError: mocks.mockSetError,
   }),
@@ -30,22 +49,22 @@ vi.mock('../store/index.js', () => ({
 // Mock the API client
 vi.mock('../api/index.js', () => ({
   polymarketClient: {
-    getMarkets: mocks.mockGetMarkets,
+    getEvents: mocks.mockGetEvents,
   },
 }));
 
 // Import after mocks are set up
-import { useMarkets } from './useMarkets.js';
+import { useEvents } from './useEvents.js';
 
-describe('useMarkets', () => {
+describe('useEvents', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns markets state and refresh function', () => {
-    const result = useMarkets();
+  it('returns events state and refresh function', () => {
+    const result = useEvents();
 
-    expect(result).toHaveProperty('markets');
+    expect(result).toHaveProperty('events');
     expect(result).toHaveProperty('isLoading');
     expect(result).toHaveProperty('error');
     expect(result).toHaveProperty('refresh');
@@ -53,39 +72,44 @@ describe('useMarkets', () => {
   });
 
   it('refresh function calls setLoading and setError at start', async () => {
-    mocks.mockGetMarkets.mockResolvedValue(mockMarkets);
+    mocks.mockGetEvents.mockResolvedValue(mockEvents);
 
-    const { refresh } = useMarkets();
+    const { refresh } = useEvents();
     await refresh();
 
     expect(mocks.mockSetLoading).toHaveBeenCalledWith(true);
     expect(mocks.mockSetError).toHaveBeenCalledWith(null);
   });
 
-  it('refresh function fetches markets with correct params', async () => {
-    mocks.mockGetMarkets.mockResolvedValue(mockMarkets);
+  it('refresh function fetches events with correct params', async () => {
+    mocks.mockGetEvents.mockResolvedValue(mockEvents);
 
-    const { refresh } = useMarkets();
+    const { refresh } = useEvents();
     await refresh();
 
-    expect(mocks.mockGetMarkets).toHaveBeenCalledWith({ limit: 50, active: true });
+    expect(mocks.mockGetEvents).toHaveBeenCalledWith({
+      limit: 25,
+      active: true,
+      closed: false,
+      ascending: false,
+    });
   });
 
-  it('refresh function sets markets on success', async () => {
-    mocks.mockGetMarkets.mockResolvedValue(mockMarkets);
+  it('refresh function sets events on success', async () => {
+    mocks.mockGetEvents.mockResolvedValue(mockEvents);
 
-    const { refresh } = useMarkets();
+    const { refresh } = useEvents();
     await refresh();
 
-    expect(mocks.mockSetMarkets).toHaveBeenCalledWith(mockMarkets);
+    expect(mocks.mockSetEvents).toHaveBeenCalledWith(mockEvents);
     expect(mocks.mockSetLoading).toHaveBeenCalledWith(false);
   });
 
   it('refresh function sets error on failure', async () => {
     const testError = new Error('API failed');
-    mocks.mockGetMarkets.mockRejectedValue(testError);
+    mocks.mockGetEvents.mockRejectedValue(testError);
 
-    const { refresh } = useMarkets();
+    const { refresh } = useEvents();
     await refresh();
 
     expect(mocks.mockSetError).toHaveBeenCalledWith('API failed');
@@ -93,11 +117,11 @@ describe('useMarkets', () => {
   });
 
   it('refresh function handles non-Error rejection', async () => {
-    mocks.mockGetMarkets.mockRejectedValue('string error');
+    mocks.mockGetEvents.mockRejectedValue('string error');
 
-    const { refresh } = useMarkets();
+    const { refresh } = useEvents();
     await refresh();
 
-    expect(mocks.mockSetError).toHaveBeenCalledWith('Failed to fetch markets');
+    expect(mocks.mockSetError).toHaveBeenCalledWith('Failed to fetch events');
   });
 });

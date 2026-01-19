@@ -21,7 +21,7 @@ export const MarketSchema = z.object({
   conditionId: z.string(),
   slug: z.string(),
   endDate: z.string().optional(),
-  liquidity: z.string(),
+  liquidity: z.string().optional(),
   volume: z.string(),
   volume24hr: z.number().optional(),
   outcomes: jsonStringArray,
@@ -32,6 +32,30 @@ export const MarketSchema = z.object({
 export type Market = z.infer<typeof MarketSchema>;
 
 export const MarketsResponseSchema = z.array(MarketSchema);
+
+export const EventSchema = z.object({
+  id: z.string(),
+  ticker: z.string().nullable().optional(),
+  slug: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  creationDate: z.string().nullable().optional(),
+  image: z.string().nullable().optional(),
+  active: z.boolean().nullable().optional(),
+  closed: z.boolean().nullable().optional(),
+  archived: z.boolean().nullable().optional(),
+  featured: z.boolean().nullable().optional(),
+  liquidity: z.number().nullable().optional(),
+  volume: z.number().nullable().optional(),
+  volume24hr: z.number().nullable().optional(),
+  markets: z.array(MarketSchema).optional(),
+}).passthrough();
+
+export type Event = z.infer<typeof EventSchema>;
+
+export const EventsResponseSchema = z.array(EventSchema);
 
 export class PolymarketClient {
   private baseUrl: string;
@@ -50,6 +74,7 @@ export class PolymarketClient {
     const params = new URLSearchParams();
     if (options?.limit) params.set("limit", options.limit.toString());
     if (options?.offset) params.set("offset", options.offset.toString());
+    
     if (options?.active !== undefined)
       params.set("active", options.active.toString());
 
@@ -89,6 +114,46 @@ export class PolymarketClient {
 
     const data = await response.json();
     return MarketsResponseSchema.parse(data);
+  }
+
+  async getEvents(options?: {
+    limit?: number;
+    offset?: number;
+    active?: boolean;
+    closed?: boolean;
+    ascending?: boolean;
+  }): Promise<Event[]> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", options.limit.toString());
+    if (options?.offset) params.set("offset", options.offset.toString());
+    if (options?.active !== undefined)
+      params.set("active", options.active.toString());
+    if (options?.closed !== undefined)
+      params.set("closed", options.closed.toString());
+    if (options?.ascending !== undefined)
+      params.set("ascending", options.ascending.toString());
+
+    const url = `${this.gammaUrl}/events?${params.toString()}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch events: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return EventsResponseSchema.parse(data);
+  }
+
+  async getEvent(id: string): Promise<Event> {
+    const url = `${this.gammaUrl}/events/${id}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch event: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return EventSchema.parse(data);
   }
 }
 

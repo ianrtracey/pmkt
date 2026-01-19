@@ -1,11 +1,13 @@
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { useState } from "react";
-import { useMarkets } from "../hooks/useMarkets.js";
-import type { Market } from "../api/client.js";
+import { useEvents } from "../hooks/useEvents.js";
+import type { Event } from "../api/client.js";
 
-export function MarketList() {
-  const { markets, isLoading, error, refresh } = useMarkets();
+const isRawModeSupported = process.stdin.isTTY ?? false;
+
+export function EventList() {
+  const { events, isLoading, error, refresh } = useEvents();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useInput((input, key) => {
@@ -13,32 +15,21 @@ export function MarketList() {
       setSelectedIndex((prev) => Math.max(0, prev - 1));
     }
     if (key.downArrow || input === "j") {
-      setSelectedIndex((prev) => Math.min(markets.length - 1, prev + 1));
+      setSelectedIndex((prev) => Math.min(events.length - 1, prev + 1));
     }
     if (input === "r") {
       refresh();
     }
-  });
+  }, { isActive: isRawModeSupported });
 
-  const formatVolume = (vol: string | number) => {
-    const numVol = typeof vol === "string" ? parseFloat(vol) : vol;
-    if (numVol >= 1000000) return `$${(numVol / 1000000).toFixed(1)}M`;
-    if (numVol >= 1000) return `$${(numVol / 1000).toFixed(0)}K`;
-    return `$${numVol.toFixed(0)}`;
+  const formatVolume = (vol: number | null | undefined) => {
+    if (vol == null) return "$0";
+    if (vol >= 1000000) return `$${(vol / 1000000).toFixed(1)}M`;
+    if (vol >= 1000) return `$${(vol / 1000).toFixed(0)}K`;
+    return `$${vol.toFixed(0)}`;
   };
 
-  const getPriceColor = (price: number) => {
-    if (price >= 0.7) return "green";
-    if (price <= 0.3) return "red";
-    return "yellow";
-  };
-
-  const getYesPrice = (market: Market): number => {
-    const priceStr = market.outcomePrices[0];
-    return priceStr ? parseFloat(priceStr) : 0;
-  };
-
-  const formatEndDate = (dateStr: string | undefined): string => {
+  const formatEndDate = (dateStr: string | null | undefined): string => {
     if (!dateStr) return "No end date";
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
@@ -48,30 +39,34 @@ export function MarketList() {
     });
   };
 
-  if (isLoading && markets.length === 0) {
+  const getMarketCount = (event: Event): number => {
+    return event.markets?.length ?? 0;
+  };
+
+  if (isLoading && events.length === 0) {
     return (
       <Box flexDirection="column" gap={0}>
         <Box marginBottom={1}>
           <Text bold color="white">
-            Trending Markets
+            Trending Events
           </Text>
         </Box>
         <Box>
           <Text color="cyan">
             <Spinner type="dots" />
           </Text>
-          <Text color="gray"> Loading markets...</Text>
+          <Text color="gray"> Loading events...</Text>
         </Box>
       </Box>
     );
   }
 
-  if (error && markets.length === 0) {
+  if (error && events.length === 0) {
     return (
       <Box flexDirection="column" gap={0}>
         <Box marginBottom={1}>
           <Text bold color="white">
-            Trending Markets
+            Trending Events
           </Text>
         </Box>
         <Box flexDirection="column">
@@ -84,15 +79,15 @@ export function MarketList() {
     );
   }
 
-  if (markets.length === 0) {
+  if (events.length === 0) {
     return (
       <Box flexDirection="column" gap={0}>
         <Box marginBottom={1}>
           <Text bold color="white">
-            Trending Markets
+            Trending Events
           </Text>
         </Box>
-        <Text color="gray">No markets found</Text>
+        <Text color="gray">No events found</Text>
       </Box>
     );
   }
@@ -101,9 +96,9 @@ export function MarketList() {
     <Box flexDirection="column" gap={0}>
       <Box marginBottom={1}>
         <Text bold color="white">
-          Trending Markets
+          Trending Events
         </Text>
-        <Text color="gray"> ({markets.length})</Text>
+        <Text color="gray"> ({events.length})</Text>
         {isLoading && (
           <Text color="cyan">
             {" "}
@@ -112,11 +107,11 @@ export function MarketList() {
         )}
       </Box>
 
-      {markets.map((market, index) => {
+      {events.map((event, index) => {
         const isSelected = index === selectedIndex;
-        const yesPrice = getYesPrice(market);
+        const marketCount = getMarketCount(event);
         return (
-          <Box key={market.id} flexDirection="row" paddingX={1}>
+          <Box key={event.id} flexDirection="row" paddingRight={1}>
             <Box width={2}>
               <Text color={isSelected ? "cyan" : "gray"}>
                 {isSelected ? ">" : " "}
@@ -128,20 +123,18 @@ export function MarketList() {
                 bold={isSelected}
                 wrap="truncate"
               >
-                {market.question}
+                {event.title || "Untitled Event"}
               </Text>
             </Box>
             <Box width={12} justifyContent="flex-end">
-              <Text color={getPriceColor(yesPrice)} bold>
-                {(yesPrice * 100).toFixed(0)}%
-              </Text>
-              <Text color="gray"> Yes</Text>
+              <Text color="cyan">{marketCount}</Text>
+              <Text color="gray"> {marketCount === 1 ? "mkt" : "mkts"}</Text>
             </Box>
             <Box width={10} justifyContent="flex-end">
-              <Text color="gray">{formatVolume(market.volume)}</Text>
+              <Text color="gray">{formatVolume(event.volume)}</Text>
             </Box>
             <Box width={14} justifyContent="flex-end">
-              <Text color="gray">{formatEndDate(market.endDate)}</Text>
+              <Text color="gray">{formatEndDate(event.endDate)}</Text>
             </Box>
           </Box>
         );

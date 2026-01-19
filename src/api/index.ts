@@ -1,2 +1,2 @@
 export { polymarketClient, PolymarketClient } from "./client.js";
-export type { Market } from "./client.js";
+export type { Market, Event } from "./client.js";
