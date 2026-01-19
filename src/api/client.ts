@@ -33,6 +33,17 @@ export type Market = z.infer<typeof MarketSchema>;
 
 export const MarketsResponseSchema = z.array(MarketSchema);
 
+export const TagSchema = z.object({
+  id: z.string().optional(),
+  slug: z.string(),
+  label: z.string().optional(),
+  name: z.string().optional(),
+}).passthrough();
+
+export type Tag = z.infer<typeof TagSchema>;
+
+export const TagsResponseSchema = z.array(TagSchema);
+
 export const EventSchema = z.object({
   id: z.string(),
   ticker: z.string().nullable().optional(),
@@ -56,6 +67,30 @@ export const EventSchema = z.object({
 export type Event = z.infer<typeof EventSchema>;
 
 export const EventsResponseSchema = z.array(EventSchema);
+
+export const CommentProfileSchema = z.object({
+  name: z.string().nullable().optional(),
+  pseudonym: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  profileImage: z.string().nullable().optional(),
+}).passthrough();
+
+export const CommentSchema = z.object({
+  id: z.string(),
+  body: z.string().nullable().optional(),
+  parentEntityType: z.string().nullable().optional(),
+  parentEntityID: z.number().nullable().optional(),
+  userAddress: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+  profile: CommentProfileSchema.nullable().optional(),
+  reactionCount: z.number().nullable().optional(),
+  reportCount: z.number().nullable().optional(),
+}).passthrough();
+
+export type Comment = z.infer<typeof CommentSchema>;
+
+export const CommentsResponseSchema = z.array(CommentSchema);
 
 export class PolymarketClient {
   private baseUrl: string;
@@ -154,6 +189,79 @@ export class PolymarketClient {
 
     const data = await response.json();
     return EventSchema.parse(data);
+  }
+
+  async getTags(): Promise<Tag[]> {
+    const url = `${this.gammaUrl}/tags`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tags: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return TagsResponseSchema.parse(data);
+  }
+
+  async getTag(slug: string): Promise<Tag> {
+    const url = `${this.gammaUrl}/tags/${slug}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tag: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return TagSchema.parse(data);
+  }
+
+  async getEventsByTag(
+    tagSlug: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<Event[]> {
+    const params = new URLSearchParams();
+    params.set("tag", tagSlug);
+    if (options?.limit) params.set("limit", options.limit.toString());
+    if (options?.offset) params.set("offset", options.offset.toString());
+
+    const url = `${this.gammaUrl}/events?${params.toString()}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch events by tag: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return EventsResponseSchema.parse(data);
+  }
+
+  async getComments(options: {
+    entityType: "Event" | "Series" | "market";
+    entityId: string | number;
+    limit?: number;
+    offset?: number;
+    ascending?: boolean;
+  }): Promise<Comment[]> {
+    const params = new URLSearchParams();
+    params.set("parent_entity_type", options.entityType);
+    params.set("parent_entity_id", options.entityId.toString());
+    params.set("limit", (options.limit ?? 25).toString());
+    params.set("offset", (options.offset ?? 0).toString());
+    if (options.ascending !== undefined)
+      params.set("ascending", options.ascending.toString());
+
+    const url = `${this.gammaUrl}/comments?${params.toString()}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch comments: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return CommentsResponseSchema.parse(data);
   }
 }
 

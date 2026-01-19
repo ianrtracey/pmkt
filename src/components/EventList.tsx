@@ -2,12 +2,14 @@ import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { useState } from "react";
 import { useEvents } from "../hooks/useEvents.js";
+import { useAppStore } from "../store/index.js";
 import type { Event } from "../api/client.js";
 
 const isRawModeSupported = process.stdin.isTTY ?? false;
 
 export function EventList() {
   const { events, isLoading, error, refresh } = useEvents();
+  const { selectEvent, setView } = useAppStore();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useInput((input, key) => {
@@ -19,6 +21,10 @@ export function EventList() {
     }
     if (input === "r") {
       refresh();
+    }
+    if (key.return && events.length > 0) {
+      selectEvent(events[selectedIndex] ?? null);
+      setView("markets");
     }
   }, { isActive: isRawModeSupported });
 

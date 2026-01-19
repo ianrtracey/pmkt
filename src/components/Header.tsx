@@ -13,7 +13,7 @@ const rainbowColors = [
 ];
 
 interface HeaderProps {
-  currentView: "events" | "portfolio" | "search";
+  currentView: "events" | "markets" | "portfolio" | "search";
 }
 
 export function Header({ currentView }: HeaderProps) {
