@@ -3,19 +3,31 @@ import { z } from "zod";
 const POLYMARKET_API_BASE = "https://clob.polymarket.com";
 const GAMMA_API_BASE = "https://gamma-api.polymarket.com";
 
+// Helper to parse JSON string or pass through array
+const jsonStringArray = z.preprocess((val) => {
+  if (typeof val === "string") {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return val;
+    }
+  }
+  return val;
+}, z.array(z.string()));
+
 export const MarketSchema = z.object({
   id: z.string(),
   question: z.string(),
   conditionId: z.string(),
   slug: z.string(),
-  endDate: z.string(),
+  endDate: z.string().optional(),
   liquidity: z.string(),
   volume: z.string(),
   volume24hr: z.number().optional(),
-  outcomes: z.array(z.string()),
-  outcomePrices: z.array(z.string()),
+  outcomes: jsonStringArray,
+  outcomePrices: jsonStringArray,
   active: z.boolean(),
-});
+}).passthrough();
 
 export type Market = z.infer<typeof MarketSchema>;
 
